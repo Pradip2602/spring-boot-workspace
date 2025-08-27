@@ -37,14 +37,16 @@ public class WeatherServiceImpl implements WeatherService {
 
     // get weather by city name impl , enabled caching to prevent frequent DB call.
     @Override
-    @Cacheable(value = "weatherByCity", key = "#city") //specifying that make this method use cache
+    @Cacheable(value = "weatherLUSH", keyGenerator = "cityKeyGenerator")
+    //specifying that make this method use cache
     public Weather getWeatherByCity(String city) {
         return weatherRepository.findByCity(city);
     }
 
     // @CachePut used to prevent data inconsistency
     @Override
-    @CachePut(value = "weatherByCity", key = "#city")    // now cache also get updated once weather updates.
+    @CachePut(value = "weather", keyGenerator = "cityKeyGenerator")
+    // now cache also get updated once weather updates.
     public Weather updateWeather(String city, String forecast) {
         // get weather from DB
         Weather weather = weatherRepository.findByCity(city);
@@ -61,7 +63,8 @@ public class WeatherServiceImpl implements WeatherService {
 
     // @CacheEvict used to prevent data inconsistency
     @Override
-    @CacheEvict(value = "weatherByCity", key = "#city") // cache gets deleted when record deleted in DB.
+    @CacheEvict(value = "weather", keyGenerator = "cityKeyGenerator")
+    // cache gets deleted when record deleted in DB.
     public String deleteWeather(String city) {
         // get weather from DB
         Weather weather = weatherRepository.findByCity(city);

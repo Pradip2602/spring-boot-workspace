@@ -7,6 +7,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
+/*
+        - This is custom Cache Manager
+        - If you use redis then redis data dependency needs to added in maven
+ */
+
 @Service
 public class CacheService {
 
