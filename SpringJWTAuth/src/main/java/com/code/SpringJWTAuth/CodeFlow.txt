@@ -1,0 +1,85 @@
+Spring JWT Authentication Project - Code Flow Explanation
+
+1. **SecurityConfig.java**
+
+   * Configures Spring Security.
+   * Disables CSRF (stateless JWT).
+   * Permits access to `/api/auth/**`, `/h2-console/**`, `/api/healthCheck`.
+   * All other endpoints require authentication.
+   * Adds `JwtAuthFilter` before `UsernamePasswordAuthenticationFilter`.
+   * Provides `UserDetailsService`, `PasswordEncoder`, and `AuthenticationManager` beans.
+
+2. **AuthController.java**
+
+   * REST controller for authentication endpoint `/api/auth`.
+   * Accepts `AuthRequest` containing username and password.
+   * Uses `AuthenticationManager` to authenticate credentials.
+   * If authentication succeeds, generates JWT token via `JWTUtil`.
+
+3. **AuthRequest.java**
+
+   * DTO to receive username and password from client.
+   * Contains getters and setters for username and password.
+
+4. **Users.java**
+
+   * JPA entity representing a user.
+   * Implements `UserDetails` to integrate with Spring Security.
+   * Fields: `id`, `username`, `password`, `role`.
+   * `getAuthorities()` converts role into `SimpleGrantedAuthority`.
+   * `UserDetails` methods (`isAccountNonExpired`, `isAccountNonLocked`, etc.) are defaulted to true.
+
+5. **JwtAuthFilter.java**
+
+   * Custom JWT filter that runs once per request.
+   * Extracts JWT from `Authorization` header.
+   * Validates token and username.
+   * Loads user details from database using `CustomUserDetailsService`.
+   * Sets authentication in `SecurityContextHolder` if valid.
+   * Continues filter chain regardless of authentication result.
+
+6. **UserDetailsRepository.java**
+
+   * Repository interface for `Users` entity.
+   * Extends `JpaRepository` for CRUD operations.
+   * Custom method `findByUsername` to fetch user by username for authentication.
+
+7. **CustomUserDetailsService.java**
+
+   * Implements `UserDetailsService`.
+   * Loads user by username using `UserDetailsRepository`.
+   * Throws `UsernameNotFoundException` if user not found.
+
+8. **AdminUserInitializer.java**
+
+   * Component to create default admin user on application startup.
+   * Uses `CommandLineRunner` to execute logic after startup.
+   * Checks if user `admin` exists.
+   * If not, creates admin with encoded password and role `ROLE_ADMIN`.
+
+9. **JWTUtil.java**
+
+   * Utility class for JWT generation, extraction, and validation.
+   * Generates JWT token with username as subject and 1-hour expiration.
+   * Extracts username and claims from token.
+   * Validates token by checking username match and expiration.
+   * Checks if token is expired.
+
+**Overall JWT Authentication Flow:**
+
+1. Client sends POST request to `/api/auth` with `username` and `password`.
+2. `AuthController` uses `AuthenticationManager` to authenticate user.
+3. If authentication succeeds, `JWTUtil` generates a token and returns it.
+4. Client sends subsequent requests with JWT in `Authorization` header (`Bearer <token>`).
+5. `JwtAuthFilter` intercepts requests, extracts and validates token.
+6. If token is valid, sets authentication in `SecurityContextHolder`.
+7. Secured endpoints check `SecurityContextHolder` for authenticated user and authorize access based on roles.
+8. Admin user is automatically created at application startup if it does not exist.
+
+**Key Notes:**
+
+* Passwords are stored encoded using `BCryptPasswordEncoder`.
+* Roles are assigned as `ROLE_USER`, `ROLE_ADMIN` and mapped to authorities.
+* JWT secret should be kept safe; consider using `application.properties` for configuration.
+* CSRF is disabled because JWT is stateless.
+* H2 console is accessible for development purposes.
